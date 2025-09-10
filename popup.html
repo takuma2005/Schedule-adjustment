@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>空き時間検索</title>
+  <style>
+    body {
+      width: 300px;
+      padding: 16px;
+      margin: 0;
+      font-family: 'Google Sans', Roboto, Arial, sans-serif;
+      background: #f8f9fa;
+    }
+    
+    h2 {
+      margin: 0 0 16px 0;
+      color: #202124;
+      font-size: 18px;
+      text-align: center;
+    }
+    
+    .instruction {
+      background: white;
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .instruction p {
+      margin: 0 0 12px 0;
+      color: #202124;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+    
+    .instruction ol {
+      margin: 0;
+      padding-left: 20px;
+      color: #5f6368;
+      font-size: 13px;
+    }
+    
+    .instruction li {
+      margin-bottom: 8px;
+    }
+    
+    .open-calendar-btn {
+      background: #4285f4;
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      width: 100%;
+      transition: background 0.2s;
+    }
+    
+    .open-calendar-btn:hover {
+      background: #3367d6;
+    }
+  </style>
+</head>
+<body>
+  <h2>空き時間検索</h2>
+  
+  <div class="instruction">
+    <p><strong>使用方法：</strong></p>
+    <ol>
+      <li>Googleカレンダーを開く</li>
+      <li>右上の「空き時間検索」ボタンをクリック</li>
+      <li>条件を入力して検索する</li>
+    </ol>
+  </div>
+  
+  <button class="open-calendar-btn" id="open-calendar">
+    Googleカレンダーを開く
+  </button>
+
+  <script>
+    document.getElementById('open-calendar').addEventListener('click', () => {
+      chrome.tabs.create({ url: 'https://calendar.google.com' });
+      window.close();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Google Calendar Free Time Finder",
+  "version": "1.0",
+  "description": "Googleカレンダーの空き時間を検索・表示する拡張機能",
+  "permissions": [
+    "activeTab",
+    "storage"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://calendar.google.com/*",
+        "https://calendar.google.com/calendar/*/*"
+      ],
+      "js": ["content.js"],
+      "css": ["styles.css"],
+      "run_at": "document_end"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "空き時間検索"
+  }
+}
