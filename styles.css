@@ -42,7 +42,7 @@
   width: 90%;
   max-width: 500px;
   min-width: 450px;
-  max-height: 95vh;
+  max-height: 90vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -103,7 +103,7 @@
 .output-area {
   position: relative;
   display: flex;
-  height: 180px;
+  height: 140px;
   flex-shrink: 0;
 }
 
@@ -163,7 +163,9 @@
 .button-section {
   display: flex;
   gap: 8px;
-  padding: 10px 0;
+  padding: 0;
+  margin-top: 10px;
+  margin-bottom: 10px;
   flex-shrink: 0;
 }
 
@@ -228,11 +230,9 @@
 .settings-section {
   background: white;
   border-radius: 12px;
-  padding: 15px;
-  padding-bottom: 20px;
+  padding: 12px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  margin-top: 10px;
-  margin-bottom: 15px;
+  margin: 8px 0;
 }
 
 /* 日付範囲設定 */
@@ -505,7 +505,7 @@
   }
   
   .output-area {
-    height: 120px;
+    height: 100px;
   }
   
   .settings-panel.show {
