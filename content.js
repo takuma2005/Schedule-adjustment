@@ -114,10 +114,10 @@ function showFreeTimePopup() {
 
           <div class="toggle-group">
             <div class="toggle-settings">
-              <label><input type="checkbox" id="include-all-day" checked> 終日の予定を予定として含める</label>
+              <label><input type="checkbox" id="include-all-day"> 終日の予定を予定として含める</label>
             </div>
             <div class="toggle-settings">
-              <label><input type="checkbox" id="include-weekends" checked> 土日を含める</label>
+              <label><input type="checkbox" id="include-weekends"> 土日を含める</label>
             </div>
           </div>
         </div>
@@ -128,6 +128,40 @@ function showFreeTimePopup() {
   popup.appendChild(popupContainer);
   
   document.body.appendChild(popup);
+  
+  // レイアウト調整関数（設定が全て表示されるように出力欄の高さを自動調整）
+  function adjustLayout() {
+    try {
+      const container = popupContainer;
+      const header = container.querySelector('.popup-header');
+      const content = container.querySelector('.popup-content');
+      const buttonSection = container.querySelector('.button-section');
+      const settingsPanelEl = container.querySelector('.settings-panel');
+      const outputAreaEl = container.querySelector('.output-area');
+      if (!content || !outputAreaEl) return;
+
+      const allowed = Math.floor(window.innerHeight * 0.9);
+      const headerH = header ? header.getBoundingClientRect().height : 0;
+      const buttonsH = buttonSection ? buttonSection.getBoundingClientRect().height : 0;
+      const settingsVisible = settingsPanelEl && settingsPanelEl.style.display !== 'none';
+      const settingsH = settingsVisible ? settingsPanelEl.scrollHeight : 0;
+
+      const cs = getComputedStyle(content);
+      const paddingV = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+
+      let target = allowed - headerH - paddingV - buttonsH - settingsH - 24; // 余白分
+      const minH = 80; // 最低確保する高さ
+      if (target < minH) target = minH;
+
+      outputAreaEl.style.height = target + 'px';
+    } catch (e) {
+      // no-op
+    }
+  }
+
+  // 初回レイアウト調整とリサイズ対応
+  adjustLayout();
+  window.addEventListener('resize', adjustLayout);
   
   // イベントリスナーを設定
   document.getElementById('close-popup').addEventListener('click', () => {
@@ -182,12 +216,18 @@ function showFreeTimePopup() {
       toggleButton.classList.add('active');
       setTimeout(() => {
         settingsPanel.classList.add('show');
+        adjustLayout(); // 開いた直後に調整
       }, 10);
+      setTimeout(() => {
+        adjustLayout(); // トランジション完了後に再調整
+      }, 320);
     } else {
       settingsPanel.classList.remove('show');
       toggleButton.classList.remove('active');
+      adjustLayout(); // 閉じる直前に調整
       setTimeout(() => {
         settingsPanel.style.display = 'none';
+        adjustLayout(); // 閉じた後に再調整
       }, 300);
     }
   });
@@ -199,13 +239,30 @@ function showFreeTimePopup() {
   durationInput.addEventListener('change', () => {
     if (durationInput.value < 15) durationInput.value = 15;
     if (durationInput.value > 240) durationInput.value = 240;
+    handleSearch();
   });
   
   bufferTimeInput.addEventListener('change', () => {
     if (bufferTimeInput.value < 0) bufferTimeInput.value = 0;
     if (bufferTimeInput.value > 60) bufferTimeInput.value = 60;
+    handleSearch();
   });
   
+  // 入力変更で即時反映
+  const startTimeInput = document.getElementById('start-time');
+  const endTimeInput = document.getElementById('end-time');
+  const startDateInput = document.getElementById('start-date');
+  const endDateInput = document.getElementById('end-date');
+  const includeAllDayInput = document.getElementById('include-all-day');
+  const includeWeekendsInput = document.getElementById('include-weekends');
+
+  [startTimeInput, endTimeInput, startDateInput, endDateInput].forEach(el => {
+    if (el) el.addEventListener('change', () => handleSearch());
+  });
+  [includeAllDayInput, includeWeekendsInput].forEach(el => {
+    if (el) el.addEventListener('change', () => handleSearch());
+  });
+
   document.getElementById('update-search').addEventListener('click', () => {
     handleSearch();
   });
@@ -246,22 +303,108 @@ function showFreeTimePopup() {
   });
 }
 
+// 現在表示中のカレンダーURLやDOMから基準日を推定
+function getVisibleAnchorDate() {
+  // 1) URL パターン: /r/(day|week|month)/YYYY/M/D または /(day|week|month)/YYYY/M/D
+  try {
+    const path = location.pathname || '';
+    let m = path.match(/\/r\/(day|week|month)\/(\d{4})\/(\d{1,2})\/(\d{1,2})/);
+    if (m) {
+      const y = parseInt(m[2], 10); const mo = parseInt(m[3], 10) - 1; const d = parseInt(m[4], 10);
+      return new Date(y, mo, d);
+    }
+    m = path.match(/\/(day|week|month)\/(\d{4})\/(\d{1,2})\/(\d{1,2})/);
+    if (m) {
+      const y = parseInt(m[2], 10); const mo = parseInt(m[3], 10) - 1; const d = parseInt(m[4], 10);
+      return new Date(y, mo, d);
+    }
+  } catch {}
+  // 2) DOM パターン: data-date を持つ現在フォーカス/選択/セル
+  try {
+    const sel = document.querySelector('[aria-current="date"][data-date], [aria-selected="true"][data-date], [role="gridcell"][data-date]');
+    if (sel) {
+      const ymd = sel.getAttribute('data-date');
+      if (ymd) {
+        const [y, m, d] = ymd.split('-').map(Number);
+        if (!isNaN(y) && !isNaN(m) && !isNaN(d)) return new Date(y, m - 1, d);
+      }
+    }
+  } catch {}
+  // 3) フォールバック: 今日
+  return new Date();
+}
+
+// 週の開始(日曜)と終了(土曜)を求める
+function getWeekRangeForDate(date, weekStart = 0) { // weekStart: 0=Sun
+  const start = new Date(date);
+  start.setHours(0, 0, 0, 0);
+  const dow = start.getDay();
+  const diff = (dow - weekStart + 7) % 7;
+  start.setDate(start.getDate() - diff);
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  return { start, end };
+}
+
+function formatYMDLocal(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+// 見出しの曜日テキストから曜日番号(0=日〜6=土)を推定
+function mapWeekTextToIndex(txt) {
+  if (!txt) return null;
+  let s = String(txt).trim().toLowerCase();
+  s = s.replace(/\s+/g, '');
+  // 日本語: 日, 月, 火, 水, 木, 金, 土 / 「曜日」「曜」等削除
+  s = s.replace(/曜日|曜/g, '');
+  const jpMap = { '日':0, '月':1, '火':2, '水':3, '木':4, '金':5, '土':6 };
+  for (const k of Object.keys(jpMap)) {
+    if (s.includes(k)) return jpMap[k];
+  }
+  // 英語: Sun, Mon, Tue, Wed, Thu, Fri, Sat / 2文字略記も対応
+  const letters = s.replace(/[^a-z]/g, '');
+  if (letters) {
+    const en3 = { sun:0, mon:1, tue:2, wed:3, thu:4, fri:5, sat:6 };
+    const en2 = { su:0, mo:1, tu:2, we:3, th:4, fr:5, sa:6 };
+    const key3 = letters.slice(0,3);
+    const key2 = letters.slice(0,2);
+    if (key3 in en3) return en3[key3];
+    if (key2 in en2) return en2[key2];
+  }
+  return null;
+}
+
+// DOMの曜日ヘッダ順から週の開始曜日を推定（失敗時は0=日曜）
+function detectWeekStartFromDOM() {
+  try {
+    // Googleカレンダーの月/週ビューで曜日ヘッダは columnheader で表現されることが多い
+    const headers = Array.from(document.querySelectorAll('[role="columnheader"]'));
+    const indices = headers
+      .map(h => mapWeekTextToIndex(h.textContent))
+      .filter(v => v !== null && v >= 0 && v <= 6);
+    if (indices.length >= 1) {
+      // 先頭列の曜日を週開始とみなす
+      return indices[0];
+    }
+  } catch {}
+  return 0; // フォールバック: 日曜始まり
+}
+
 function getDefaultStartDate() {
-  // Use local date to avoid UTC shift issues
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
+  const anchor = getVisibleAnchorDate();
+  const weekStart = detectWeekStartFromDOM();
+  const { start } = getWeekRangeForDate(anchor, weekStart);
+  return formatYMDLocal(start);
 }
 
 function getDefaultEndDate() {
-  const date = new Date();
-  date.setDate(date.getDate() + 7);
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
+  const anchor = getVisibleAnchorDate();
+  const weekStart = detectWeekStartFromDOM();
+  const { end } = getWeekRangeForDate(anchor, weekStart);
+  return formatYMDLocal(end);
 }
 
 // ====== DOM parsing helpers (robust) ======
@@ -641,22 +784,29 @@ function findFreeSlotsForDay(date, events, params) {
     const clampedStart = new Date(Math.max(dayStart, bufferedEventStart));
     const clampedEnd = new Date(Math.min(dayEnd, bufferedEventEnd));
 
-    if (clampedStart > currentTime) {
-      const gapDuration = (clampedStart - currentTime) / (1000 * 60); // 分
+    // 既に業務終了時刻以降なら打ち切り
+    if (currentTime >= dayEnd) break;
+
+    // 次のブロック開始は必ず日終端以下にクランプ
+    const nextStart = new Date(Math.min(clampedStart, dayEnd));
+
+    if (currentTime < nextStart) {
+      const gapDuration = (nextStart - currentTime) / (1000 * 60); // 分
       const requiredTime = params.duration;
       
       if (gapDuration >= requiredTime) {
         freeSlots.push({
           date: dateStr,
           start: new Date(currentTime),
-          end: new Date(clampedStart),
+          end: new Date(nextStart),
           duration: gapDuration
         });
         added++;
       }
     }
     
-    currentTime = new Date(Math.max(currentTime, clampedEnd));
+    // currentTime は clampedEnd まで進めるが、必ず日終端を超えない
+    currentTime = new Date(Math.min(Math.max(currentTime, clampedEnd), dayEnd));
   }
   
   // 最後のイベント後の空き時間
