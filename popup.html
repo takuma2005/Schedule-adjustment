@@ -70,20 +70,19 @@
     <p><strong>使用方法：</strong></p>
     <ol>
       <li>Googleカレンダーを開く</li>
+      <li><strong>月表示</strong>に切り替える（重要）</li>
       <li>右上の「空き時間検索」ボタンをクリック</li>
-      <li>条件を入力して検索する</li>
+      <li>条件を設定して検索する</li>
     </ol>
+    <p style="color: #ea4335; font-size: 12px; margin-top: 12px;">
+      ⚠️ 注意: 月表示でのみ正しく動作します
+    </p>
   </div>
   
   <button class="open-calendar-btn" id="open-calendar">
     Googleカレンダーを開く
   </button>
 
-  <script>
-    document.getElementById('open-calendar').addEventListener('click', () => {
-      chrome.tabs.create({ url: 'https://calendar.google.com' });
-      window.close();
-    });
-  </script>
+  <script src="popup.js"></script>
 </body>
 </html>

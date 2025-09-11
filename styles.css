@@ -294,7 +294,7 @@
 .duration-settings {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: 15px;
   gap: 10px;
 }
 
@@ -335,9 +335,18 @@
   font-size: 12px;
 }
 
+/* トグル設定グループ */
+.toggle-group {
+  margin-bottom: 12px;
+}
+
 /* トグル設定 */
 .toggle-settings {
-  margin-bottom: 12px;
+  margin-bottom: 4px;
+}
+
+.toggle-settings:last-child {
+  margin-bottom: 0;
 }
 
 .toggle-settings label {
@@ -347,7 +356,7 @@
   font-size: 13px;
   color: #333;
   cursor: pointer;
-  padding: 8px 0;
+  padding: 6px 0;
   user-select: none;
 }
 

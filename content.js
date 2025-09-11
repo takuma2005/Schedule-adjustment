@@ -111,11 +111,13 @@ function showFreeTimePopup() {
             </div>
           </div>
 
-          <div class="toggle-settings">
-<label><input type="checkbox" id="include-all-day" checked> 終日の予定を予定として含める</label>
-          </div>
-          <div class="toggle-settings">
-            <label><input type="checkbox" id="include-weekends" checked> 土日を含める</label>
+          <div class="toggle-group">
+            <div class="toggle-settings">
+              <label><input type="checkbox" id="include-all-day" checked> 終日の予定を予定として含める</label>
+            </div>
+            <div class="toggle-settings">
+              <label><input type="checkbox" id="include-weekends" checked> 土日を含める</label>
+            </div>
           </div>
         </div>
       </div>

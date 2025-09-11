@@ -5,7 +5,8 @@
   "description": "Googleカレンダーの空き時間を検索・表示する拡張機能",
   "permissions": [
     "activeTab",
-    "storage"
+    "storage",
+    "tabs"
   ],
   "content_scripts": [
     {
