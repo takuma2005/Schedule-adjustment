@@ -62,16 +62,15 @@ function showFreeTimePopup() {
     </div>
     <div class="popup-content">
       <div class="output-area">
-        <textarea id="free-slots" class="free-time-output" readonly></textarea>
+        <textarea id="free-slots" class="free-time-output" readonly placeholder="空き時間検索結果がここに表示されます..."></textarea>
       </div>
       
       <div class="button-section">
         <button id="copy-button" class="copy-btn">コピー</button>
-        <button id="toggle-settings" class="settings-toggle-btn">設定</button>
         <button id="update-search" class="update-btn">更新</button>
       </div>
       
-      <div class="settings-panel" id="settings-panel" style="display: none;">
+      <div class="settings-panel" id="settings-panel">
         <div class="settings-section">
           <div class="date-range-settings">
             <div class="setting-row">
@@ -150,27 +149,10 @@ function showFreeTimePopup() {
     }, 1500);
   });
   
-  // 設定パネルのトグル
+  // 設定パネルを常に表示
   const settingsPanel = document.getElementById('settings-panel');
-  const toggleButton = document.getElementById('toggle-settings');
-  let isSettingsOpen = false;
-  
-  toggleButton.addEventListener('click', () => {
-    isSettingsOpen = !isSettingsOpen;
-    if (isSettingsOpen) {
-      settingsPanel.style.display = 'block';
-      toggleButton.classList.add('active');
-      setTimeout(() => {
-        settingsPanel.classList.add('show');
-      }, 10);
-    } else {
-      settingsPanel.classList.remove('show');
-      toggleButton.classList.remove('active');
-      setTimeout(() => {
-        settingsPanel.style.display = 'none';
-      }, 300);
-    }
-  });
+  settingsPanel.style.display = 'block';
+  settingsPanel.classList.add('show');
   
   // 入力値のバリデーション
   const durationInput = document.getElementById('duration');
@@ -188,16 +170,12 @@ function showFreeTimePopup() {
   
   document.getElementById('update-search').addEventListener('click', () => {
     handleSearch();
-    // 更新後に設定パネルを閉じる
-    if (isSettingsOpen) {
-      isSettingsOpen = false;
-      settingsPanel.classList.remove('show');
-      toggleButton.classList.remove('active');
-      setTimeout(() => {
-        settingsPanel.style.display = 'none';
-      }, 300);
-    }
   });
+  
+  // 初期表示時に空き時間検索を実行
+  setTimeout(() => {
+    handleSearch();
+  }, 100);
   
   // 初回検索を自動実行
   handleSearch();

@@ -101,16 +101,16 @@
 
 /* 出力エリア（テキストエリア） */
 .output-area {
-  flex: 1;
   display: flex;
-  margin-bottom: 10px;
+  margin-bottom: 15px;
+  height: 200px;
+  flex-shrink: 0;
 }
 
 .free-time-output {
   flex: 1;
   width: 100%;
-  min-height: 360px;
-  max-height: 70vh;
+  height: 100%;
   padding: 12px 14px;
   border: 1px solid #ddd;
   border-radius: 12px;
@@ -120,9 +120,11 @@
   font-size: 14px;
   line-height: 1.6;
   color: #202124;
-  resize: vertical;
-  overflow: auto;
-  white-space: pre;
+  resize: none;
+  overflow-y: auto;
+  overflow-x: hidden;
+  white-space: pre-wrap;
+  word-wrap: break-word;
 }
 
 
@@ -151,40 +153,19 @@
   background: #3367d6;
 }
 
-.settings-toggle-btn {
-  flex: 1;
-  background: #f0f0f0;
-  color: #333;
-  border: none;
-  padding: 10px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  transition: all 0.2s;
-}
-
-.settings-toggle-btn:hover {
-  background: #e0e0e0;
-}
-
-.settings-toggle-btn.active {
-  background: #4285f4;
-  color: white;
-}
 
 /* 設定パネル */
 .settings-panel {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
-  opacity: 0;
+  display: block;
+  opacity: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: 40vh;
+  flex-shrink: 0;
 }
 
 .settings-panel.show {
-  max-height: 60vh;
   opacity: 1;
-  transition: max-height 0.3s ease-in, opacity 0.3s ease-in;
   overflow-y: auto;
   overflow-x: hidden;
 }
@@ -460,12 +441,11 @@
     gap: 8px;
   }
   
-  .free-time-output {
-    min-height: 250px;
-    max-height: 50vh;
+  .output-area {
+    height: 150px;
   }
   
-  .settings-panel.show {
-    max-height: 50vh;
+  .settings-panel {
+    max-height: 35vh;
   }
 }
