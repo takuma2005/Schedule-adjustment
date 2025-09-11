@@ -215,7 +215,7 @@ function findFreeSlotsForDay(date, events, params) {
 
 ### Googleカレンダー DOM構造分析
 
-#### 週表示での要素構造
+#### 月表示での要素構造
 ```html
 <div class="XuJrye">
   今日 9:00-10:30 「プロジェクト会議」
@@ -230,10 +230,10 @@ function findFreeSlotsForDay(date, events, params) {
 
 #### 解析対象セレクタ
 ```javascript
-const primarySelector = '.XuJrye';  // 週表示のイベント要素
+const primarySelector = '.XuJrye';  // 月表示のイベント要素
 const fallbackSelectors = [
   '[data-eventid]',     // イベントID属性
-  '.EeJKSd',           // 月表示要素（参考）
+  '.EeJKSd',           // 別の月表示要素（参考）
   '[role="button"]'    // クリック可能イベント
 ];
 ```
@@ -468,5 +468,5 @@ PluginManager.register(new AIRecommendationPlugin());
 
 **メンテナンス情報**: 
 - Google Calendar の仕様変更に対応するため、3ヶ月に1回の動作確認を推奨
-- DOM セレクタの変更が最も影響を受けやすい部分
+- 月表示のDOM セレクタの変更が最も影響を受けやすい部分
 - 主要ブラウザでの動作確認: Chrome 90+, Edge 90+
