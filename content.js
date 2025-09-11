@@ -62,7 +62,7 @@ function showFreeTimePopup() {
     </div>
     <div class="popup-content">
       <div class="output-area">
-        <textarea id="free-slots" class="free-time-output" readonly placeholder="空き時間検索結果がここに表示されます..."></textarea>
+        <textarea id="free-slots" class="free-time-output" placeholder="空き時間検索結果がここに表示されます。結果を自由に編集できます。"></textarea>
       </div>
       
       <div class="button-section">
@@ -135,18 +135,36 @@ function showFreeTimePopup() {
   // コピーボタン
   document.getElementById('copy-button').addEventListener('click', () => {
     const output = document.getElementById('free-slots');
-    output.select();
-    document.execCommand('copy');
     
-    // コピー成功を表示
-    const copyBtn = document.getElementById('copy-button');
-    const originalText = copyBtn.textContent;
-    copyBtn.textContent = 'コピー済';
-    copyBtn.style.background = '#4caf50';
-    setTimeout(() => {
-      copyBtn.textContent = originalText;
-      copyBtn.style.background = '';
-    }, 1500);
+    // テキストを選択してコピー
+    output.select();
+    output.setSelectionRange(0, 99999); // モバイル対応
+    
+    try {
+      // 現代的なClipboard APIを使用
+      navigator.clipboard.writeText(output.value).then(() => {
+        showCopySuccess();
+      }).catch(() => {
+        // フォールバック: 古い方法
+        document.execCommand('copy');
+        showCopySuccess();
+      });
+    } catch (err) {
+      // 最終フォールバック
+      document.execCommand('copy');
+      showCopySuccess();
+    }
+    
+    function showCopySuccess() {
+      const copyBtn = document.getElementById('copy-button');
+      const originalText = copyBtn.textContent;
+      copyBtn.textContent = 'コピー済';
+      copyBtn.style.background = '#4caf50';
+      setTimeout(() => {
+        copyBtn.textContent = originalText;
+        copyBtn.style.background = '';
+      }, 1500);
+    }
   });
   
   // 設定パネルを常に表示
@@ -171,6 +189,25 @@ function showFreeTimePopup() {
   document.getElementById('update-search').addEventListener('click', () => {
     handleSearch();
   });
+  
+  // 出力エリアの編集状態を監視
+  const outputArea = document.getElementById('free-slots');
+  let isEdited = false;
+  
+  outputArea.addEventListener('input', () => {
+    if (!isEdited) {
+      isEdited = true;
+      outputArea.classList.add('edited');
+    }
+  });
+  
+  // 新しい検索結果で編集状態をリセット
+  const originalHandleSearch = handleSearch;
+  window.handleSearch = function() {
+    isEdited = false;
+    outputArea.classList.remove('edited');
+    originalHandleSearch();
+  };
   
   // 初期表示時に空き時間検索を実行
   setTimeout(() => {
