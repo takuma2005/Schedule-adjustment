@@ -67,10 +67,11 @@ function showFreeTimePopup() {
       
       <div class="button-section">
         <button id="copy-button" class="copy-btn">コピー</button>
+        <button id="toggle-settings" class="settings-btn">設定</button>
         <button id="update-search" class="update-btn">更新</button>
       </div>
       
-      <div class="settings-panel" id="settings-panel">
+      <div class="settings-panel" id="settings-panel" style="display: none;">
         <div class="settings-section">
           <div class="date-range-settings">
             <div class="setting-row">
@@ -169,10 +170,27 @@ function showFreeTimePopup() {
     }
   });
   
-  // 設定パネルを常に表示
+  // 設定パネルのトグル機能
   const settingsPanel = document.getElementById('settings-panel');
-  settingsPanel.style.display = 'block';
-  settingsPanel.classList.add('show');
+  const toggleButton = document.getElementById('toggle-settings');
+  let isSettingsOpen = false;
+  
+  toggleButton.addEventListener('click', () => {
+    isSettingsOpen = !isSettingsOpen;
+    if (isSettingsOpen) {
+      settingsPanel.style.display = 'block';
+      toggleButton.classList.add('active');
+      setTimeout(() => {
+        settingsPanel.classList.add('show');
+      }, 10);
+    } else {
+      settingsPanel.classList.remove('show');
+      toggleButton.classList.remove('active');
+      setTimeout(() => {
+        settingsPanel.style.display = 'none';
+      }, 300);
+    }
+  });
   
   // 入力値のバリデーション
   const durationInput = document.getElementById('duration');
