@@ -3,6 +3,51 @@
 let freeTimeButton = null;
 let popup = null;
 
+const STORAGE_KEY = 'freeTimeFinderSettings';
+const SAVE_DEBOUNCE_MS = 300;
+let pendingSaveTimer = null;
+
+function getDefaultSettings() {
+  return {
+    startDate: getDefaultStartDate(),
+    endDate: getDefaultEndDate(),
+    startTime: '09:00',
+    endTime: '20:00',
+    duration: 30,
+    bufferTime: 15,
+    includeAllDay: false,
+    includeWeekends: false
+  };
+}
+
+function loadUserSettings() {
+  const defaults = getDefaultSettings();
+  return new Promise((resolve) => {
+    if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.sync) {
+      resolve(defaults);
+      return;
+    }
+    chrome.storage.sync.get({ [STORAGE_KEY]: defaults }, (items) => {
+      const stored = items && items[STORAGE_KEY];
+      if (!stored || typeof stored !== 'object') {
+        resolve(defaults);
+        return;
+      }
+      resolve({ ...defaults, ...stored });
+    });
+  });
+}
+
+function saveUserSettings(settings) {
+  if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.sync) return;
+  if (pendingSaveTimer) {
+    clearTimeout(pendingSaveTimer);
+  }
+  pendingSaveTimer = setTimeout(() => {
+    chrome.storage.sync.set({ [STORAGE_KEY]: settings });
+  }, SAVE_DEBOUNCE_MS);
+}
+
 // ページ読み込み完了後にボタンを追加
 window.addEventListener('load', () => {
   setTimeout(addFreeTimeButton, 2000);
@@ -270,30 +315,71 @@ function showFreeTimePopup() {
   // 出力エリアの編集状態を監視
   const outputArea = document.getElementById('free-slots');
   let isEdited = false;
-  
+
   outputArea.addEventListener('input', () => {
     if (!isEdited) {
       isEdited = true;
       outputArea.classList.add('edited');
     }
   });
-  
-  // 新しい検索結果で編集状態をリセット
-  const originalHandleSearch = handleSearch;
-  window.handleSearch = function() {
+
+  const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+  const timePattern = /^\d{2}:\d{2}$/;
+
+  function applySettingsToUI(settings) {
+    const defaults = getDefaultSettings();
+    const startDate = datePattern.test(settings.startDate || '') ? settings.startDate : defaults.startDate;
+    const endDate = datePattern.test(settings.endDate || '') ? settings.endDate : defaults.endDate;
+    const startTime = timePattern.test(settings.startTime || '') ? settings.startTime : defaults.startTime;
+    const endTime = timePattern.test(settings.endTime || '') ? settings.endTime : defaults.endTime;
+    const duration = Number.isFinite(Number(settings.duration)) ? Number(settings.duration) : defaults.duration;
+    const bufferTime = Number.isFinite(Number(settings.bufferTime)) ? Number(settings.bufferTime) : defaults.bufferTime;
+
+    startDateInput.value = startDate;
+    endDateInput.value = endDate;
+    startTimeInput.value = startTime;
+    endTimeInput.value = endTime;
+    durationInput.value = duration;
+    bufferTimeInput.value = bufferTime;
+    includeAllDayInput.checked = Boolean(settings.includeAllDay);
+    includeWeekendsInput.checked = Boolean(settings.includeWeekends);
+  }
+
+  function collectSettingsFromUI() {
+    return {
+      startDate: startDateInput.value || getDefaultStartDate(),
+      endDate: endDateInput.value || getDefaultEndDate(),
+      startTime: startTimeInput.value || '09:00',
+      endTime: endTimeInput.value || '20:00',
+      duration: parseInt(durationInput.value, 10) || 30,
+      bufferTime: parseInt(bufferTimeInput.value, 10) || 15,
+      includeAllDay: includeAllDayInput.checked,
+      includeWeekends: includeWeekendsInput.checked
+    };
+  }
+
+  let settingsInitialized = false;
+
+  // 新しい検索結果で編集状態をリセットし、設定を保存
+  const originalHandleSearch = handleSearch.__base || handleSearch;
+  const wrappedHandleSearch = function(e) {
     isEdited = false;
     outputArea.classList.remove('edited');
-    originalHandleSearch();
+    originalHandleSearch.call(this, e);
+    if (settingsInitialized) {
+      saveUserSettings(collectSettingsFromUI());
+    }
   };
-  
-  // 初期表示時に空き時間検索を実行
-  setTimeout(() => {
+  wrappedHandleSearch.__base = originalHandleSearch;
+  window.handleSearch = wrappedHandleSearch;
+
+  loadUserSettings().then((settings) => {
+    applySettingsToUI(settings);
+    settingsInitialized = true;
     handleSearch();
-  }, 100);
-  
-  // 初回検索を自動実行
-  handleSearch();
-  
+    adjustLayout();
+  });
+
   // ポップアップ外をクリックで閉じる
   popup.addEventListener('click', (e) => {
     if (e.target === popup) {
@@ -515,6 +601,13 @@ function parseTimeRangeFromString(s, baseDate) {
   // Normalize dashes/tilde
   let str = s.replace(/[–−〜～]/g, '-');
 
+  // Support "時半" expressions before generic replacements
+  str = str.replace(/(午前|午後)\s*(\d{1,2})\s*時\s*半/g, (_, ap, h) => `${ap}${h}:30`);
+  str = str.replace(/(\d{1,2})\s*時\s*半/g, (_, h) => `${h}:30`);
+
+  // 補完: 午前/午後に続く時刻（"午後3" など）
+  str = str.replace(/(午前|午後)\s*(\d{1,2})(?![:：\d])/g, (_, ap, h) => `${ap}${h}:00`);
+
   // Normalize Japanese hour/minute expressions: 11時30分 -> 11:30, 11時 -> 11:00
   str = str.replace(/(\d{1,2})\s*時\s*(\d{1,2})\s*分/g, '$1:$2');
   str = str.replace(/(\d{1,2})\s*時/g, '$1:00');
@@ -525,6 +618,9 @@ function parseTimeRangeFromString(s, baseDate) {
     const d = new Date(baseDate);
     const start = new Date(d); start.setHours(parseInt(m[1]), parseInt(m[2]), 0, 0);
     const end   = new Date(d); end.setHours(parseInt(m[3]), parseInt(m[4]), 0, 0);
+    if (end <= start) {
+      end.setDate(end.getDate() + 1);
+    }
     return { start, end };
   }
 
@@ -536,10 +632,21 @@ function parseTimeRangeFromString(s, baseDate) {
     const am2 = m[4] || '';
     let h2 = parseInt(m[5]); let mm2 = m[6] ? parseInt(m[6]) : 0;
     ({h:h1,m:mm1} = to24h(h1, mm1, am1));
-    ({h:h2,m:mm2} = to24h(h2, mm2, am2));
+    if (am2) {
+      ({h:h2,m:mm2} = to24h(h2, mm2, am2));
+    } else if (am1) {
+      ({h:h2,m:mm2} = to24h(h2, mm2, am1));
+    }
+    // If only end has AM/PM, apply it to start as well
+    if (!am1 && am2) {
+      ({h:h1,m:mm1} = to24h(h1, mm1, am2));
+    }
     const d = new Date(baseDate);
     const start = new Date(d); start.setHours(h1, mm1, 0, 0);
     const end   = new Date(d); end.setHours(h2, mm2, 0, 0);
+    if (end <= start) {
+      end.setDate(end.getDate() + 1);
+    }
     return { start, end };
   }
 
@@ -549,6 +656,9 @@ function parseTimeRangeFromString(s, baseDate) {
     const d = new Date(baseDate);
     const start = new Date(d); start.setHours(parseInt(m[1]), 0, 0, 0);
     const end   = new Date(d); end.setHours(parseInt(m[2]), 0, 0, 0);
+    if (end <= start) {
+      end.setDate(end.getDate() + 1);
+    }
     return { start, end };
   }
 
@@ -633,7 +743,12 @@ function searchFreeTime(params) {
     const freeSlots = findFreeTimeSlots(events, params);
     displayFreeSlots(freeSlots, freeSlotsDiv);
   } catch (error) {
-    freeSlotsDiv.innerHTML = '<div class="error">エラーが発生しました: ' + error.message + '</div>';
+    const message = `エラーが発生しました: ${error && error.message ? error.message : error}`;
+    if ('value' in freeSlotsDiv) {
+      freeSlotsDiv.value = message;
+    } else {
+      freeSlotsDiv.textContent = message;
+    }
   }
 }
 
