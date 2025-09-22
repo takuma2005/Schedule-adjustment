@@ -3,6 +3,11 @@
   "name": "空いてる時間書き出してくれるやつ",
   "version": "1.0",
   "description": "Googleカレンダーの空き時間を検索・表示する拡張機能",
+  "icons": {
+    "16": "assets/icon16.png",
+    "48": "assets/icon48.png",
+    "128": "assets/icon128.png"
+  },
   "permissions": [
     "activeTab",
     "storage",
@@ -21,6 +26,11 @@
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "空き時間検索"
+    "default_title": "空き時間検索",
+    "default_icon": {
+      "16": "assets/icon16.png",
+      "48": "assets/icon48.png",
+      "128": "assets/icon128.png"
+    }
   }
 }
