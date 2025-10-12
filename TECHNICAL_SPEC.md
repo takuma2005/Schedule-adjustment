@@ -40,7 +40,7 @@ Google Calendar Free Time Finder の技術的詳細と開発者向け情報を�
   "name": "Google Calendar Free Time Finder",
   "version": "1.0",
   "description": "Googleカレンダーの空き時間を検索・表示する拡張機能",
-  "permissions": ["activeTab", "storage"],
+  "permissions": ["storage"],
   "content_scripts": [{
     "matches": [
       "https://calendar.google.com/*",
@@ -58,7 +58,6 @@ Google Calendar Free Time Finder の技術的詳細と開発者向け情報を�
 ```
 
 **セキュリティ要件**:
-- `activeTab`: 現在アクティブなタブへの一時的アクセス
 - `storage`: 拡張機能設定の永続化
 - ホスト権限: calendar.google.com ドメインのみ
 
