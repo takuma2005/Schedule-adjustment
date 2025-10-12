@@ -9,9 +9,7 @@
     "128": "assets/icon128.png"
   },
   "permissions": [
-    "activeTab",
-    "storage",
-    "tabs"
+    "storage"
   ],
   "content_scripts": [
     {
